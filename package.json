@@ -1,0 +1,11 @@
+{
+  "name": "id3_reader",
+  "version": "0.0.1",
+  "readme": "README.md",
+  "description": "Returns ID3 tags for audio files",
+  "main": "media_manager.js",
+  "dependencies": {
+    "underscore":"1.5.2",
+    "async": "0.2.9"
+  }
+}
