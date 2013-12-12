@@ -1,11 +1,29 @@
 {
   "name": "id3_reader",
-  "version": "0.0.1",
+  "version": "0.0.2",
+  "main": "id3_reader.js",
   "readme": "README.md",
   "description": "Returns ID3 tags for audio files",
   "main": "media_manager.js",
   "dependencies": {
     "underscore":"1.5.2",
     "async": "0.2.9"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/interbred-monkey/id3_reader.git"
+  },
+  "keywords": [
+    "ID3",
+    "reader",
+    "node.js",
+    "node",
+    "mp3",
+    "audio"
+  ],
+  "author": "Interbred Monkey",
+  "license": "BSD",
+  "bugs": {
+    "url": "https://github.com/interbred-monkey/id3_reader/issues"
   }
 }
