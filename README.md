@@ -2,6 +2,13 @@
 
 A Node.JS ID3 tag reader for audio files, simple but thats what it does
 
+ID3 Reader is available through an installation from npm
+[id3_reader](https://npmjs.org/package/id3_reader)
+
+```
+npm install id3_reader
+```
+
 # Include
 
 To use this library simply require the file like so:
