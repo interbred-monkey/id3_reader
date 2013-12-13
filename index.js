@@ -195,7 +195,12 @@ var processTags = function(content) {
 
       }
 
-      tags[label] = text;
+      // if we have something in the text then put it in
+      if (!_.isUndefined(label) && !_.isUndefined(text) && text !== "") {
+
+        tags[label] = text;
+
+      }
 
     }
 
