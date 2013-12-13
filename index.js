@@ -12,12 +12,7 @@ var async = require('async');
 var Buffer = require('buffer').Buffer;
 
 // declare our return object
-var id3 = {
-  artist: "unknown",
-  title: "unknown",
-  album: "unknown",
-  genre: "unknown"
-};
+var id3 = {};
 
 var genres = [
   "Techno-Industrial", "Electronic", "Pop-Folk", "Eurodance", "Dream", "Southern Rock", "Comedy", 
@@ -173,7 +168,13 @@ var extractUserDefinedData = function(tag_text) {
 
 var processTags = function(content) {
 
-  var tags = {};
+  var tags = {
+    artist: "unknown",
+    title: "unknown",
+    album: "unknown",
+    genre: "unknown"
+  }
+
   var pos = 0;
 
   while (pos < content.length - 10) {
