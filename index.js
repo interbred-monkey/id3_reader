@@ -12,7 +12,12 @@ var async = require('async');
 var Buffer = require('buffer').Buffer;
 
 // declare our return object
-var id3 = {};
+var id3 = {
+  artist: "unknown",
+  title: "unknown",
+  album: "unknown",
+  genre: "unknown"
+};
 
 var genres = [
   "Techno-Industrial", "Electronic", "Pop-Folk", "Eurodance", "Dream", "Southern Rock", "Comedy", 
@@ -124,6 +129,7 @@ var read = function(file, callback) {
   getRawTags(file, function(success, msg, rawTags) {
 
     id3.tags = processTags(rawTags);
+    id3.tags.path = file;
 
     return callback(true, "ID3 Tag generated", id3);
 
