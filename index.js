@@ -179,13 +179,13 @@ var processTags = function(content) {
 
   while (pos < content.length - 10) {
     
-    var tag_label = content.toString('ascii', pos, pos + 4);
+    var tag_label = content.slice(pos, pos + 4).toString('UTF-8');
     var tag_size = content.readUInt32BE(pos + 4);
 
     if (_.isUndefined(labels[tag_label]) === false) {
 
       var label = labels[tag_label].toLowerCase().replace(/\s/g, '_');
-      var text = content.slice(pos + 10, pos + 10 + tag_size).toString('ascii').replace(/[\u0000-\u0009]|~/g, '');
+      var text = content.slice(pos + 10, pos + 10 + tag_size).toString('UTF-8').replace(/[\u0000-\u0009]|~/g, '');
 
       // is this some user defined tag?
       if (label === "user_defined_text_information_frame") {
@@ -289,7 +289,7 @@ var loadTagDetails = function(file_handle, callback) {
 
     }
 
-    if (file_data.toString('ascii', 0, 3) !== 'ID3') {
+    if (file_data.slice(0, 3).toString() !== 'ID3') {
 
       return callback("No ID3 Tag");
 
