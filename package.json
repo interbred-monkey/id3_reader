@@ -1,9 +1,9 @@
 {
   "name": "id3_reader",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "main": "index.js",
   "readme": "README.md",
-  "description": "Returns ID3 tags for audio files",
+  "description": "Reads and Writes ID3 tags for audio files using Javascript",
   "main": "media_manager.js",
   "dependencies": {
     "underscore":"1.5.2",
@@ -15,9 +15,11 @@
   },
   "keywords": [
     "ID3",
+    "writer",
     "reader",
     "node.js",
     "node",
+    "javascript",
     "mp3",
     "audio"
   ],

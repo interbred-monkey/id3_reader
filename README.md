@@ -1,6 +1,7 @@
 # ID3 Reader
 
-A Node.JS ID3 tag reader for audio files, simple but thats what it does
+A Node.JS ID3 tag reader for audio files, simple but thats what it does.
+ID3 Reader now supports the writing of tags!!
 
 ID3 Reader is available through an installation from npm
 [id3_reader](https://npmjs.org/package/id3_reader)
@@ -19,6 +20,8 @@ var id3_reader = require('id3_reader');
 # Usage
 
 ID3 Reader is very simple to use and can be run as follows:
+
+## Reading tags
 ```
 id3_reader.read(path_to_music_file, function(success, msg, data) {
   
@@ -42,10 +45,25 @@ The output of the above could look something like this:
      rip_date: '2008-02-14',
      ripping_tool: 'EAC',
      release_type: 'Retail',
-     publisher: 'Napalm Records',
-     media_type: 'CD >> Very High  (Lossy) [mp3]',
+     publisher: 'Napalm Records'
    } 
 }
+```
+
+## Writing Tags
+```
+var tags = { 
+   title: 'New tag title',
+   artist: 'New Artist',
+   album: 'New album',
+   track_number: '4/10'
+ }
+
+id3_reader.write(path_to_music_file, tags, function(success, msg) {
+  
+  console.log(msg);
+
+})
 ```
 
 ## Third-party libraries

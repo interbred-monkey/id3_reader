@@ -115,18 +115,63 @@ var user_tags = ["Rip date", "Ripping tool", "Release type"];
 // initialise the tag retrieval 
 var read = function(file, callback) {
 
+  // file doesn't exist
   if (fs.existsSync(file) === false) {
 
     return callback(false, "File does not exist");
 
   }
 
-  getRawTags(file, function(success, msg, rawTags) {
+  // get the tag data
+  getRawData(file, function(success, msg, rawData) {
 
-    id3.tags = processTags(rawTags);
+    // work out the tags from the raw data
+    id3.version = rawData.version;
+    id3.tags = processTags(rawData.tags);
     id3.tags.path = file;
 
     return callback(true, "ID3 Tag generated", id3);
+
+  });
+
+}
+
+// initialise the writing of tags
+var write = function(file, tags, callback) {
+
+  // file doesn't exist
+  if (fs.existsSync(file) === false) {
+
+    return callback(false, "File does not exist");
+
+  }
+
+  // supplied tags are in the wrong format
+  if (!_.isObject(tags)) {
+
+    return callback(false, "Supplied tags should be an Object");
+
+  }
+
+  // get the existing tag data
+  getRawData(file, function(success, msg, rawData) {
+
+    // unable to parse the tags
+    if (success === false) {
+
+      return callback(false, msg);
+
+    }
+
+    // update the current tag data with the new ones supplied
+    var new_tags = updateTags(rawData.tags, tags);
+
+    // write this back to the file
+    overwriteTags(file, new_tags, function(success, msg) {
+
+      return callback(success, msg);
+
+    });
 
   });
 
@@ -213,22 +258,49 @@ var processTags = function(content) {
 
 }
 
-var getRawTags = function(path, callback) {
+var updateTags = function(content, new_tags) {
+
+  // add in the tags that are already in the file
+  var pos = 0;
+
+  while (pos < content.length - 10) {
+    
+    var tag_label = content.slice(pos, pos + 4).toString('UTF-8');
+    var tag_size = content.readUInt32BE(pos + 4);
+
+    if (_.isUndefined(labels[tag_label]) === false) {
+    
+      var parsed_label = labels[tag_label].toLowerCase().replace(/\s/g, '_');
+
+      if (_.isUndefined(new_tags[parsed_label]) === false) {
+
+        var value_buffer = content.slice(pos + 10, pos + 10 + tag_size);
+        value_buffer.fill('');
+        value_buffer.write(new_tags[parsed_label]);
+        content.write(value_buffer.toString(), pos + 10, pos + 10 + tag_size);
+
+      }
+
+    }
+
+    pos += (tag_size + 10);
+
+  }
+
+  return content;
+
+}
+
+var getRawData = function(file_path, callback) {
 
   var functions = [];
 
   // open the file for reading
   functions.push(function(cb) {
 
-    fs.open(path, 'r', function(err, file_handle) {
+    openFile(file_path, function(success, file_handle) {
 
-      if (err !== null) {
-
-        return cb(err);
-
-      }
-
-      return cb(null, file_handle);
+      cb(success, file_handle);
 
     });
 
@@ -241,25 +313,7 @@ var getRawTags = function(path, callback) {
   functions.push(loadTagData);
 
   // close the file
-  functions.push(function(file_handle, raw_tags, cb) {
-
-    try {
-
-      fs.close(file_handle, function() {
-
-        return cb(null, raw_tags);
-
-      });
-
-    }
-
-    catch (e) {
-
-      return cb(e);
-
-    }
-
-  });
+  functions.push(closeFile);
   
   // run the functions
   async.waterfall(functions, function(err, data) {
@@ -270,14 +324,52 @@ var getRawTags = function(path, callback) {
 
     }
 
-    return callback(true, "tags returned", data);
+    return callback(true, "data returned", data);
 
   });
 
 }
 
+// opens a file for reading
+var openFile = function(file_path, callback) {
+
+  fs.open(file_path, 'r', function(err, file_handle) {
+
+    if (err !== null) {
+
+      return callback(err);
+
+    }
+
+    return callback(null, file_handle);
+
+  });
+
+}
+
+// close the file when finished
+var closeFile = function(file_handle, return_ob, cb) {
+
+  try {
+
+    fs.close(file_handle, function() {
+
+      return cb(null, return_ob);
+
+    });
+
+  }
+
+  catch (e) {
+
+    return cb(e);
+
+  }
+
+}
+
 // loads the details about the tag size etc
-var loadTagDetails = function(file_handle, callback) {
+var loadTagDetails = function(file_handle, cb) {
 
   var file_data = new Buffer(10);
 
@@ -285,43 +377,150 @@ var loadTagDetails = function(file_handle, callback) {
 
     if (err !== null) {
 
-      return callback(err);
+      return cb(err);
 
     }
 
     if (file_data.slice(0, 3).toString() !== 'ID3') {
 
-      return callback("No ID3 Tag");
+      return cb("No ID3 Tag");
 
     }
 
     var data_size = id3Size(file_data.slice(6,10)); 
-    id3.version = '2.'+file_data.readUInt8(3)+'.'+file_data.readUInt8(4);
+    var version = '2.'+file_data.readUInt8(3)+'.'+file_data.readUInt8(4);
 
-    return callback(null, file_handle, data_size);
+    return cb(null, file_handle, data_size, version);
 
   });
 
 }
 
 // load the actual tag data
-var loadTagData = function(file_handle, tag_size, callback) {
+var loadTagData = function(file_handle, tag_size, version, cb) {
 
   var tag_data = new Buffer(tag_size);
   fs.read(file_handle, tag_data, 0, tag_size, 0, function(err, data) {
 
     if (err !== null) {
 
-      return callback(err);
+      return cb(err);
 
     }
 
-    return callback(null, file_handle, tag_data);
+    var return_ob = {
+      version: version,
+      tags: tag_data
+    }
+
+    return cb(null, file_handle, return_ob);
+
+  });
+
+}
+
+// update the file with the new tags
+var overwriteTags = function(file_path, tags, callback) {
+
+  // work out a buffer for the whole file
+  var functions = [];
+
+  functions.push(function(cb) {
+
+    openFile(file_path, function(success, file_handle) {
+
+      if (success === false) {
+
+        return cb("Unable to open file");
+
+      }
+
+      return cb(null, file_handle);
+
+    });
+
+  });
+
+  functions.push(loadTagDetails);
+
+  functions.push(function(file_handle, tag_size, version, cb) {
+
+    fileContentToBuffer(file_path, tag_size, function(file_content) {
+
+      file_content = Buffer.concat([tags, file_content]);
+
+      cb(null, file_handle, file_content);
+
+    })
+
+  });
+
+  functions.push(closeFile);
+
+  functions.push(function(file_content, cb) {
+    
+    writeFileData(file_path, file_content.toString(), function(success, msg) {
+
+      if (success === false) {
+
+        return cb(msg);
+
+      }
+
+      return cb(null, msg);
+
+    });
+
+  });
+
+  async.waterfall(functions, function(err, data) {
+
+    if (err !== null) {
+
+      return callback(false, err);
+
+    }
+
+    return callback(true, "Tags updated");
+
+  });
+
+}
+
+// given a file path turn the content into a buffer
+var fileContentToBuffer = function(file_path, tag_size, callback) {
+
+  fs.readFile(file_path, function(err, data) {
+
+    if (err !== null) {
+
+      return cb("Unable to read file");
+
+    }
+
+    return callback(new Buffer(data).slice(tag_size));
+
+  });
+
+}
+
+var writeFileData = function(file_path, file_content, callback) {
+
+  fs.writeFile(file_path, file_content, function(err) {
+
+    if (err) {
+
+      return callback(false, err);
+
+    }
+
+    return callback(true, "File wrote");
 
   });
 
 }
 
 module.exports = {
-  read: read
+  read: read,
+  write: write
 }
