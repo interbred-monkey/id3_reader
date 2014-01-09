@@ -153,25 +153,10 @@ var write = function(file, tags, callback) {
 
   }
 
-  // get the existing tag data
-  getRawData(file, function(success, msg, rawData) {
+  // overwrite the tags in the file
+  overwriteTags(file, tags, function(success, msg) {
 
-    // unable to parse the tags
-    if (success === false) {
-
-      return callback(false, msg);
-
-    }
-
-    // update the current tag data with the new ones supplied
-    var new_tags = updateTags(rawData.tags, tags);
-
-    // write this back to the file
-    overwriteTags(file, new_tags, function(success, msg) {
-
-      return callback(success, msg);
-
-    });
+    return callback(success, msg);
 
   });
 
@@ -331,9 +316,22 @@ var getRawData = function(file_path, callback) {
 }
 
 // opens a file for reading
-var openFile = function(file_path, callback) {
+var openFile = function(file_path, flag, callback) {
 
-  fs.open(file_path, 'r', function(err, file_handle) {
+  if (typeof flag === "function") {
+
+    callback = flag;
+    var open_flag = 'r';
+
+  }
+
+  else {
+
+    open_flag = flag;
+
+  }
+
+  fs.open(file_path, open_flag, function(err, file_handle) {
 
     if (err !== null) {
 
@@ -420,14 +418,14 @@ var loadTagData = function(file_handle, tag_size, version, cb) {
 }
 
 // update the file with the new tags
-var overwriteTags = function(file_path, tags, callback) {
+var overwriteTags = function(file_path, new_tags, callback) {
 
   // work out a buffer for the whole file
   var functions = [];
 
   functions.push(function(cb) {
 
-    openFile(file_path, function(success, file_handle) {
+    openFile(file_path, 'r+', function(success, file_handle) {
 
       if (success === false) {
 
@@ -445,33 +443,39 @@ var overwriteTags = function(file_path, tags, callback) {
 
   functions.push(function(file_handle, tag_size, version, cb) {
 
-    fileContentToBuffer(file_path, tag_size, function(file_content) {
+    loadTagData(file_handle, tag_size, version, function(err, file_handle, tag_content) {
 
-      file_content = Buffer.concat([tags, file_content]);
+      if (err !== null) {
 
-      cb(null, file_handle, file_content);
+        return cb(err);
+
+      }
+
+      var tag_buffer = updateTags(tag_content.tags, new_tags);
+
+      return cb(null, file_handle, tag_size, tag_buffer);
+
+    });
+
+  });
+
+  functions.push(function(file_handle, tag_size, tag_buffer, cb) {
+
+    fs.write(file_handle, tag_buffer, 0, tag_size, 0, function(e, w, b) {
+
+      if (e) {
+
+        return cb(e);
+
+      }
+
+      return cb(null, file_handle, {});
 
     })
 
   });
 
   functions.push(closeFile);
-
-  functions.push(function(file_content, cb) {
-    
-    writeFileData(file_path, file_content.toString(), function(success, msg) {
-
-      if (success === false) {
-
-        return cb(msg);
-
-      }
-
-      return cb(null, msg);
-
-    });
-
-  });
 
   async.waterfall(functions, function(err, data) {
 
@@ -482,39 +486,6 @@ var overwriteTags = function(file_path, tags, callback) {
     }
 
     return callback(true, "Tags updated");
-
-  });
-
-}
-
-// given a file path turn the content into a buffer
-var fileContentToBuffer = function(file_path, tag_size, callback) {
-
-  fs.readFile(file_path, function(err, data) {
-
-    if (err !== null) {
-
-      return cb("Unable to read file");
-
-    }
-
-    return callback(new Buffer(data).slice(tag_size));
-
-  });
-
-}
-
-var writeFileData = function(file_path, file_content, callback) {
-
-  fs.writeFile(file_path, file_content, function(err) {
-
-    if (err) {
-
-      return callback(false, err);
-
-    }
-
-    return callback(true, "File wrote");
 
   });
 
