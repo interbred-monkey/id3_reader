@@ -125,6 +125,12 @@ var read = function(file, callback) {
   // get the tag data
   getRawData(file, function(success, msg, rawData) {
 
+    if (success === false || _.isUndefined(rawData)) {
+
+      return callback(false, "Unable to generate tags");
+
+    }
+
     // work out the tags from the raw data
     id3.version = rawData.version;
     id3.tags = processTags(rawData.tags);
