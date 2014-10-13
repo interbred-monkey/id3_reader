@@ -278,6 +278,10 @@ var updateTags = function(content, new_tags) {
 
   }
 
+  // update the tag size
+  var data_size = id3Size(content.slice(6,10));
+  content.write(data_size.toString(), 6, 10);
+
   return content;
 
 }
