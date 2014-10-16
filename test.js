@@ -1,7 +1,7 @@
 var id3 = require('./index.js');
 var async = require('async');
 
-var path = '/Users/simonmudd/Desktop/Tunes/ABBA MANIA DOES YOUR MOTHER KNOW.mp3';
+var path = '/home/munky-c/Desktop/01 Getaway.mp3';
 
 var actions = [];
 
@@ -17,6 +17,7 @@ actions.push(function(cb) {
 
 })
 
+/*
 actions.push(function(cb) {
 
   var tags = {
@@ -47,7 +48,7 @@ actions.push(function(cb) {
   })
 
 })
-
+*/
 async.series(actions, function() {
 
   process.exit();
