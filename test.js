@@ -1,7 +1,7 @@
 var id3 = require('./index.js');
 var async = require('async');
 
-var path = '/home/munky-c/Desktop/01 Getaway.mp3';
+var path = '/home/munky-c/Desktop/01 - Over the Seas.mp3';
 
 var actions = [];
 
