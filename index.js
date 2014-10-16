@@ -211,17 +211,17 @@ var processTags = function(content) {
     genre: "unknown"
   }
 
-  var pos = 0;
+  var pos = 10;
 
   while (pos < content.length - 10) {
     
-    var tag_label = content.slice(pos, pos + 4).toString('UTF-8');
     var tag_size = content.readUInt32BE(pos + 4);
+    var tag_label = content.slice(pos, pos + 4).toString('ascii');
 
     if (_.isUndefined(labels[tag_label]) === false) {
 
       var label = labels[tag_label].toLowerCase().replace(/\s/g, '_');
-      var text = content.slice(pos + 10, pos + 10 + tag_size).toString('UTF-8').replace(/[\u0000-\u0009]|~/g, '');
+      var text = content.slice(pos + 10, pos + 10 + tag_size).toString('UTF-8').replace(/[\u0000-\u0009]|~|�/g, '');
 
       // is this some user defined tag?
       if (label === "user_defined_text_information_frame") {
@@ -277,6 +277,10 @@ var updateTags = function(content, new_tags) {
     pos += (tag_size + 10);
 
   }
+
+  // update the tag size
+  var data_size = id3Size(content.slice(6,10));
+  content.write(data_size.toString(), 6, 10);
 
   return content;
 
