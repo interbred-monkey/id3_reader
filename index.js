@@ -56,7 +56,23 @@ var write = function(params, callback) {
 
       }
 
-      return cb(null);
+      return cb(null, data);
+
+    })
+
+  })
+
+  actions.push(function(cb) {
+
+    new tagReader({file_path: params.file}, function(err, file_content) {
+
+      if (err) {
+
+        return cb(err);
+
+      }
+
+      return cb(null, file_content);
 
     })
 

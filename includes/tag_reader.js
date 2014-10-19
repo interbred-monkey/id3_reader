@@ -14,7 +14,7 @@ var tagReader = function(params, callback) {
 
   if (Buffer.isBuffer(params)) {
 
-    
+
 
   }
 
@@ -70,6 +70,12 @@ tagReader.prototype = {
   tag_size: null,
   file_handle: null,
   file_content: null
+}
+
+tagReader.prototype.buildActions = function() {
+
+  
+
 }
 
 // loads the details about the tag size etc
