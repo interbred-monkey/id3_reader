@@ -7,7 +7,7 @@ var actions = [];
 
 actions.push(function(cb) {
 
-  id3.read(path, function(err, msg, data) {
+  id3.read(path, function(err, data) {
     
     console.log(err, data);
 
