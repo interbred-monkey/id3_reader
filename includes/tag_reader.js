@@ -12,20 +12,50 @@ var tagReader = function(params, callback) {
 
   _instance = this;
 
+  var actions = _instance.buildActions(params);
+
+  async.series(actions, function(err) {
+
+    if (!_.isNull(err)){
+
+      return callback('Unable to process file');
+
+    }
+
+    return callback(null, _instance.tag_content)
+
+  })
+
+}
+
+tagReader.prototype = {
+  file_path: null,
+  file_content: null,
+  tag_size: null,
+  tag_content: null
+}
+
+tagReader.prototype.buildActions = function(params) {
+
   if (Buffer.isBuffer(params)) {
 
+    _instance.file_content = params;
 
+    var actions = [
+      _instance.loadHeader,
+      _instance.loadTags
+    ]
+
+    return actions;
 
   }
 
   _instance.file_path = params.file_path;
-  (!_.isUndefined(params.open_flag)?_instance.open_flag = params.open_flag:'');
 
   var actions = [
-    _instance.openFile,
+    _instance.readFile,
     _instance.loadHeader,
-    _instance.loadTags,
-    _instance.closeFile
+    _instance.loadTags
   ]
 
   actions.unshift(function(cb) {
@@ -50,90 +80,46 @@ var tagReader = function(params, callback) {
 
   })
 
-  async.series(actions, function(err) {
-
-    if (!_.isNull(err)){
-
-      return callback('Unable to process file');
-
-    }
-
-    return callback(null, _instance.file_content)
-
-  })
-
-}
-
-tagReader.prototype = {
-  file_path: null,
-  open_flag: 'r',
-  tag_size: null,
-  file_handle: null,
-  file_content: null
-}
-
-tagReader.prototype.buildActions = function() {
-
-  
+  return actions;
 
 }
 
 // loads the details about the tag size etc
 tagReader.prototype.loadHeader = function(callback) {
 
-  var header = new Buffer(10);
+  var header = _instance.file_content.slice(0, 10);
 
-  fs.read(_instance.file_handle, header, 0, 10, 0, function(err, data) {
+  if (header.slice(0, 3).toString() !== 'ID3') {
 
-    if (err !== null) {
+    return callback("No ID3 tags");
 
-      return callback(err);
+  }
 
-    }
+  _instance.tag_size = _instance.id3Size(header.slice(6,10));
 
-    if (header.slice(0, 3).toString() !== 'ID3') {
+  _instance.tag_content = {
+    version: '2.'+header.readUInt8(3)+'.'+header.readUInt8(4)
+  }
 
-      return callback("No ID3 tags");
-
-    }
-
-    _instance.tag_size = _instance.id3Size(header.slice(6,10));
-
-    _instance.file_content = {
-      version: '2.'+header.readUInt8(3)+'.'+header.readUInt8(4)
-    }
-
-    return callback(null);
-
-  });
+  return callback(null);
 
 }
 
 // load the actual tag data
 tagReader.prototype.loadTags = function(callback) {
 
-  var tags = new Buffer(_instance.tag_size);
+  var tags = _instance.file_content.slice(0, _instance.tag_size);
 
-  fs.read(_instance.file_handle, tags, 0, _instance.tag_size, 0, function(err, data) {
+  _instance.tag_content.tags = tags;
 
-    if (err !== null) {
-
-      return callback(err);
-
-    }
-
-    _instance.file_content.tags = tags;
-
-    return callback(null);
-
-  });
+  return callback(null);
 
 }
 
 // opens a file for reading
-tagReader.prototype.openFile = function(callback) {
+tagReader.prototype.readFile = function(callback) {
 
-  fs.open(_instance.file_path, _instance.open_flag, function(err, file_handle) {
+  fs.readFile(_instance.file_path, function(err, file_content) {
 
     if (err !== null) {
 
@@ -141,32 +127,11 @@ tagReader.prototype.openFile = function(callback) {
 
     }
 
-    _instance.file_handle = file_handle;
+    _instance.file_content = file_content;
 
     return callback(null);
 
   })
-
-}
-
-// close the file when finished
-tagReader.prototype.closeFile = function(callback) {
-
-  try {
-
-    fs.close(_instance.file_handle, function() {
-
-      return callback(null);
-
-    });
-
-  }
-
-  catch (e) {
-
-    return callback(e);
-
-  }
 
 }
 
