@@ -5,7 +5,8 @@ var _       = require('underscore'),
 
 // include some processing libraries
 var tagReader     = require('./includes/tag_reader.js'),
-    tagExtractor  = require('./includes/tag_extractor.js');
+    tagExtractor  = require('./includes/tag_extractor.js'),
+    tagWriter     = require('./includes/tag_writer.js');
 
 // initialise the tag retrieval 
 var read = function(file, callback) {

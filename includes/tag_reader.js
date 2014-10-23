@@ -14,7 +14,7 @@ var tagReader = function(params, callback) {
 
   var actions = _instance.buildActions(params);
 
-  async.series(actions, function(err) {
+  async.waterfall(actions, function(err) {
 
     if (!_.isNull(err)){
 
@@ -29,8 +29,8 @@ var tagReader = function(params, callback) {
 }
 
 tagReader.prototype = {
+  buffer: null,
   file_path: null,
-  file_content: null,
   tag_size: null,
   tag_content: null
 }
@@ -50,12 +50,16 @@ tagReader.prototype.buildActions = function(params) {
 
   }
 
+  // read the buffer from a file
   _instance.file_path = params.file_path;
 
   var actions = [
-    _instance.readFile,
+    _instance.openFile,
+    _instance.readHeaderBuffer,
     _instance.loadHeader,
-    _instance.loadTags
+    _instance.readTagBuffer,
+    _instance.loadTagBuffer,
+    _instance.closeFile
   ]
 
   actions.unshift(function(cb) {
@@ -87,7 +91,7 @@ tagReader.prototype.buildActions = function(params) {
 // loads the details about the tag size etc
 tagReader.prototype.loadHeader = function(callback) {
 
-  var header = _instance.file_content.slice(0, 10);
+  var header = _instance.buffer.slice(0, 10);
 
   if (header.slice(0, 3).toString() !== 'ID3') {
 
@@ -105,31 +109,77 @@ tagReader.prototype.loadHeader = function(callback) {
 
 }
 
-// load the actual tag data
 tagReader.prototype.loadTags = function(callback) {
 
-  var tags = _instance.file_content.slice(0, _instance.tag_size);
-
-  _instance.tag_content.tags = tags;
+  _instance.tag_content.tags = _instance.buffer.slice(10, _instance.tag_size);
 
   return callback(null);
 
 }
 
-// opens a file for reading
-tagReader.prototype.readFile = function(callback) {
+tagReader.prototype.openFile = function(callback) {
 
-  fs.readFile(_instance.file_path, function(err, file_content) {
+  fs.open(_instance.file_path, 'r', function(err, file_handle) {
 
-    if (err !== null) {
+    if (err) {
 
-      return callback(err);
+      return cb("Unable to open file");
 
     }
 
-    _instance.file_content = file_content;
+    return cb(null, file_handle);
 
-    return callback(null);
+  })
+
+}
+
+tagReader.prototype.closeFile = function(callback) {
+
+  fs.open(_instance.file_path, 'r', function(err, file_handle) {
+
+    if (err) {
+
+      return cb("Unable to open file");
+
+    }
+
+    return cb(null, file_handle);
+
+  })
+
+}
+
+tagReader.prototype.readHeaderBuffer = function(file_handle, callback) {
+
+  var headerBuffer = new Buffer(10);
+
+  fs.read(_instance.file_handle, headerBuffer, 0, 10, 0, function(err) {
+
+    if (err) {
+
+      return cb("Unable to read file");
+
+    }
+
+    return cb(null, headerBuffer);
+
+  })
+
+}
+
+tagReader.prototype.readTagBuffer = function() {
+
+  var headerBuffer = new Buffer(10);
+
+  fs.read(_instance.file_handle, headerBuffer, 0, 10, 0, function(err) {
+
+    if (err) {
+
+      return cb("Unable to read file");
+
+    }
+
+    return cb(null, headerBuffer);
 
   })
 
