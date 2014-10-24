@@ -58,6 +58,8 @@ tagExtractor.prototype.processTags = function(content) {
     var tag_size = content.readUInt32BE(pos + 4);
     var tag_label = content.slice(pos, pos + 4).toString('ascii');
 
+    console.log(tag_label);
+
     if (_.isUndefined(config.labels[tag_label]) === false) {
 
       var label = config.labels[tag_label].toLowerCase().replace(/\s/g, '_');

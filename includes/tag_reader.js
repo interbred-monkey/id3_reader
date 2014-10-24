@@ -14,7 +14,7 @@ var tagReader = function(params, callback) {
 
   var actions = _instance.buildActions(params);
 
-  async.waterfall(actions, function(err) {
+  async.series(actions, function(err) {
 
     if (!_.isNull(err)){
 
@@ -44,7 +44,7 @@ tagReader.prototype.buildActions = function(params) {
 
     var actions = [
       _instance.loadHeader,
-      _instance.loadTags
+      _instance.loadTagBuffer
     ]
 
     return actions;
@@ -110,7 +110,7 @@ tagReader.prototype.loadHeader = function(callback) {
 
 }
 
-tagReader.prototype.loadTags = function(callback) {
+tagReader.prototype.loadTagBuffer = function(callback) {
 
   _instance.tag_content.tags = _instance.buffer.slice(10, _instance.tag_size);
 
@@ -138,11 +138,11 @@ tagReader.prototype.openFile = function(callback) {
 
 tagReader.prototype.closeFile = function(callback) {
 
-  fs.close(_instance.file_path, 'r', function(err) {
+  fs.close(_instance.file_handle, function(err) {
 
     if (err) {
 
-      return callback("Unable to open file");
+      return callback("Unable to close file");
 
     }
 
@@ -156,7 +156,7 @@ tagReader.prototype.readHeaderBuffer = function(callback) {
 
   var header_buffer = new Buffer(10);
 
-  fs.read(_instance.file_handle, header_buffer, 0, 10, 0, function(err) {
+  fs.read(_instance.file_handle, header_buffer, 0, 10, 0, function(err, data) {
 
     if (err) {
 
@@ -176,9 +176,7 @@ tagReader.prototype.readTagBuffer = function(callback) {
 
   var tag_buffer = new Buffer(_instance.tag_size);
 
-  console.log(_instance.tag_size);
-
-  fs.read(_instance.file_handle, tag_buffer, 10, _instance.tag_size, 0, function(err) {
+  fs.read(_instance.file_handle, tag_buffer, 0, _instance.tag_size, 0, function(err, data) {
 
     if (err) {
 
