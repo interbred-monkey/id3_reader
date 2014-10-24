@@ -31,6 +31,7 @@ var tagReader = function(params, callback) {
 tagReader.prototype = {
   buffer: null,
   file_path: null,
+  file_handle: null,
   tag_size: null,
   tag_content: null
 }
@@ -39,7 +40,7 @@ tagReader.prototype.buildActions = function(params) {
 
   if (Buffer.isBuffer(params)) {
 
-    _instance.file_content = params;
+    _instance.buffer = params;
 
     var actions = [
       _instance.loadHeader,
@@ -123,11 +124,13 @@ tagReader.prototype.openFile = function(callback) {
 
     if (err) {
 
-      return cb("Unable to open file");
+      return callback("Unable to open file");
 
     }
 
-    return cb(null, file_handle);
+    _instance.file_handle = file_handle;
+
+    return callback(null);
 
   })
 
@@ -135,51 +138,57 @@ tagReader.prototype.openFile = function(callback) {
 
 tagReader.prototype.closeFile = function(callback) {
 
-  fs.open(_instance.file_path, 'r', function(err, file_handle) {
+  fs.close(_instance.file_path, 'r', function(err) {
 
     if (err) {
 
-      return cb("Unable to open file");
+      return callback("Unable to open file");
 
     }
 
-    return cb(null, file_handle);
+    return callback(null);
 
   })
 
 }
 
-tagReader.prototype.readHeaderBuffer = function(file_handle, callback) {
+tagReader.prototype.readHeaderBuffer = function(callback) {
 
-  var headerBuffer = new Buffer(10);
+  var header_buffer = new Buffer(10);
 
-  fs.read(_instance.file_handle, headerBuffer, 0, 10, 0, function(err) {
+  fs.read(_instance.file_handle, header_buffer, 0, 10, 0, function(err) {
 
     if (err) {
 
-      return cb("Unable to read file");
+      return callback("Unable to read file");
 
     }
 
-    return cb(null, headerBuffer);
+    _instance.buffer = header_buffer;
+
+    return callback(null);
 
   })
 
 }
 
-tagReader.prototype.readTagBuffer = function() {
+tagReader.prototype.readTagBuffer = function(callback) {
 
-  var headerBuffer = new Buffer(10);
+  var tag_buffer = new Buffer(_instance.tag_size);
 
-  fs.read(_instance.file_handle, headerBuffer, 0, 10, 0, function(err) {
+  console.log(_instance.tag_size);
+
+  fs.read(_instance.file_handle, tag_buffer, 10, _instance.tag_size, 0, function(err) {
 
     if (err) {
 
-      return cb("Unable to read file");
+      return callback("Unable to read file");
 
     }
 
-    return cb(null, headerBuffer);
+    _instance.buffer = tag_buffer;
+
+    return callback(null);
 
   })
 
