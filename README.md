@@ -35,17 +35,16 @@ The output of the above could look something like this:
   version: '2.3.0',
   tags: 
    { 
-     title: 'Nancy the Tavern Wench',
-     artist: 'Alestorm',
-     album: 'Captain Morgan\'s Revenge',
-     year: '2008',
-     track_number: '4/10',
-     genre: '137)Heavy Metal',
+     title: 'First Witness',
+     artist: 'Objekt',
+     album: 'Flatland,
+     year: '2014',
+     track_number: '7/11',
+     genre: '52)Electronic',
      languages: 'eng',
-     rip_date: '2008-02-14',
+     rip_date: '2014-10-24',
      ripping_tool: 'EAC',
      release_type: 'Retail',
-     publisher: 'Napalm Records'
    } 
 }
 ```
@@ -57,7 +56,7 @@ New tags are identified by their four character frame IDs. These are listed here
 PNG files can be embedded as album art by passing a buffer containing the file to the "APIC" frame. Support for JPEGs is TBD.
 
 ```
-var albumArtPath = __dirname + "/../public/img/albumart.png";
+var albumArtPath = "albumart.png";
 var albumArt = fs.readFileSync(albumArtPath);
   
 var tags = { 
