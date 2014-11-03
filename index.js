@@ -252,38 +252,95 @@ var processTags = function(content) {
 var updateTags = function(content, new_tags) {
 
   // add in the tags that are already in the file
-  var pos = 0;
+  var temp_size = 0;
 
-  while (pos < content.length - 10) {
-    
-    var tag_label = content.slice(pos, pos + 4).toString('UTF-8');
-    var tag_size = content.readUInt32BE(pos + 4);
+  //find the size of our new tags
+  for (var key in new_tags) {
+    if (new_tags.hasOwnProperty(key)) {
 
-    if (_.isUndefined(labels[tag_label]) === false) {
-    
-      var parsed_label = labels[tag_label].toLowerCase().replace(/\s/g, '_');
-
-      if (_.isUndefined(new_tags[parsed_label]) === false) {
-
-        var value_buffer = content.slice(pos + 10, pos + 10 + tag_size);
-        value_buffer.fill('');
-        value_buffer.write(new_tags[parsed_label]);
-        content.write(value_buffer.toString(), pos + 10, pos + 10 + tag_size);
-
+      //special case for album art
+      //ONLY PNGS ARE SUPPORTED
+      if (key == 'APIC'){
+        temp_size += 13 + 10 + new_tags[key].length;
       }
-
+      else {
+        temp_size += 11 + new_tags[key].length;
+      }
     }
-
-    pos += (tag_size + 10);
-
   }
 
-  // update the tag size
-  var data_size = id3Size(content.slice(6,10));
-  content.write(data_size.toString(), 6, 10);
+  //create new buffer to hold our new tags
+  var temp_buffer = new Buffer(temp_size + 10);
+  temp_buffer.fill('');
 
-  return content;
+  //copy the old header
+  content.copy(temp_buffer, 0, 0, 10);
 
+  //calculate new tag size, convert to special 28-bit int
+  var bit_size = temp_size.toString(2);
+  var formatted_size = new Array(32);
+  var appended_size = new Array(32);
+
+  for (var i = 0; i < 32; i++) {
+    if (i < (32 - bit_size.length)) {
+      appended_size[i] = 0;
+    }
+    else {
+      appended_size[i] = parseInt(bit_size[i - (32 - bit_size.length)]);
+    }
+  }
+
+  var bit_pos = 0;
+  for (var i = 4; i < 32; i++) {
+    if (bit_pos % 8 == 0 ) {
+      formatted_size[bit_pos] = 0;
+      bit_pos++;
+    }
+    formatted_size[bit_pos] = appended_size[i];
+    bit_pos++;
+  }
+
+  //write the new size of all tags
+  temp_buffer.writeUInt32BE(parseInt(formatted_size.join(""), 2), 6);
+
+  var pos = 10;
+
+  for (var key in new_tags) {
+
+    //get frame id
+    var tag_label = key.toString('ascii');
+
+    if (_.isUndefined(labels[tag_label]) === false) {
+
+      //write frame id
+      temp_buffer.write(tag_label, pos, 4, 'ascii');
+
+      //read our new tag
+      var new_tag = '\u0000' + new_tags[key];  
+      var new_tag_size = new_tag.length;     
+
+      //add tags for embedded art. PNG MIME type is hard coded
+      if (tag_label == 'APIC'){
+        var pic_header = '\u0000\u0069\u006D\u0061\u0067\u0065\u002F\u0070\u006E\u0067\u0000\u0003\u0000';
+        temp_buffer.write(pic_header.toString(), pos + 10, pos + 23);
+        new_tag_size = new_tags[key].length + 13;
+        new_tags[key].copy(temp_buffer, pos + 23, 0, new_tag_size);
+        
+      }
+      else {
+        temp_buffer.write(new_tag.toString(), pos + 10, pos + 10 + new_tag_size);
+      }
+      //write the new tag size
+      temp_buffer.writeUInt32BE(new_tag_size, pos + 4);
+      
+      //set flags to null
+      temp_buffer.write('\u0000\u0000', pos + 8, pos + 10);
+         pos += (new_tag_size + 10);
+
+    }
+  }
+
+    return temp_buffer;
 }
 
 var getRawData = function(file_path, callback) {
@@ -471,18 +528,14 @@ var overwriteTags = function(file_path, new_tags, callback) {
 
   functions.push(function(file_handle, tag_size, tag_buffer, cb) {
 
-    fs.write(file_handle, tag_buffer, 0, tag_size, 0, function(e, w, b) {
-
-      if (e) {
-
-        return cb(e);
-
-      }
-
-      return cb(null, file_handle, {});
-
-    })
-
+    //new writing algorithm to account for new tags that are larger/smaller
+    var full_mp3 = fs.readFileSync(file_path);
+    var mp3_length = full_mp3.length - tag_size;
+    var mp3_buffer = new Buffer(mp3_length);
+    full_mp3.copy(mp3_buffer, 0, tag_size);
+    fs.unlinkSync(file_path);
+    fs.appendFileSync(file_path, tag_buffer);
+    fs.appendFileSync(file_path, mp3_buffer);
   });
 
   functions.push(closeFile);
