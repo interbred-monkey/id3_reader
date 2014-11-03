@@ -51,13 +51,22 @@ The output of the above could look something like this:
 ```
 
 ## Writing Tags
+
+New tags are identified by their four character frame IDs. These are listed here: http://id3.org/id3v2.3.0#Declared_ID3v2_frames
+
+PNG files can be embedded as album art by passing a buffer containing the file to the "APIC" frame. Support for JPEGs is TBD.
+
 ```
+var albumArtPath = __dirname + "/../public/img/albumart.png";
+var albumArt = fs.readFileSync(albumArtPath);
+  
 var tags = { 
-   title: 'New tag title',
-   artist: 'New Artist',
-   album: 'New album',
-   track_number: '4/10'
- }
+  APIC: albumArt,
+  TIT2: 'New tag title',
+  TPE1: 'New Artist',
+  TALB: 'New album',
+  TRCK: '4/10'
+}
 
 id3_reader.write(path_to_music_file, tags, function(success, msg) {
   
