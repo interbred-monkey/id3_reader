@@ -11,7 +11,7 @@ var tagReader     = require('./includes/tag_reader.js'),
 // initialise the tag retrieval 
 var read = function(file, callback) {
 
-  new tagReader({file_path: file}, function(err, file_content) {
+  new tagReader(file, function(err, tag_buffer) {
 
     if (err) {
 
@@ -19,7 +19,7 @@ var read = function(file, callback) {
 
     }
 
-    var tags = new tagExtractor(file_content);
+    var tags = new tagExtractor(tag_buffer);
 
     return callback(null, tags);
 
@@ -33,7 +33,7 @@ var write = function(params, callback) {
 
   actions.push(function(cb) {
 
-    new tagReader({file_path: params.file}, function(err, file_content) {
+    new tagReader(params.path, function(err, tag_buffer) {
 
       if (err) {
 
@@ -41,15 +41,33 @@ var write = function(params, callback) {
 
       }
 
-      return cb(null, file_content);
+      return cb(null, tag_buffer);
 
     })
 
   })
 
-  actions.push(function(file_content, cb) {
+  actions.push(function(tag_buffer, cb) {
 
-    new tagWriter(file_content, function(err, data) {
+    var tags = new tagExtractor(tag_buffer);
+
+     // add in the new tags to our existing tags
+      for (var pt in params.tags) {
+
+        tags.tags[pt] = params.tags[pt];
+
+      }
+
+      // swap the tags about
+      params.tags = tags.tags;
+
+      return cb(null);
+
+  })
+
+  actions.push(function(cb) {
+
+    new tagWriter(params, function(err, data) {
 
       if (!_.isNull(err)) {
 
@@ -63,9 +81,9 @@ var write = function(params, callback) {
 
   })
 
-  actions.push(function(cb) {
+  actions.push(function(tag_buffer, cb) {
 
-    new tagReader({file_path: params.file}, function(err, file_content) {
+    new tagReader(tag_buffer, function(err, tags) {
 
       if (err) {
 
@@ -73,7 +91,7 @@ var write = function(params, callback) {
 
       }
 
-      return cb(null, file_content);
+      return cb(null, tags);
 
     })
 

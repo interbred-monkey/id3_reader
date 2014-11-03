@@ -52,7 +52,7 @@ tagReader.prototype.buildActions = function(params) {
   }
 
   // read the buffer from a file
-  _instance.file_path = params.file_path;
+  _instance.file_path = params;
 
   var actions = [
     _instance.openFile,
@@ -106,13 +106,15 @@ tagReader.prototype.loadHeader = function(callback) {
     version: '2.'+header.readUInt8(3)+'.'+header.readUInt8(4)
   }
 
+  console.log(_instance);
+
   return callback(null);
 
 }
 
 tagReader.prototype.loadTagBuffer = function(callback) {
 
-  _instance.tag_content.tags = _instance.buffer.slice(10, _instance.tag_size);
+  _instance.tag_content.tags = _instance.buffer.slice(0, _instance.tag_size);
 
   return callback(null);
 
