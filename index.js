@@ -6,6 +6,7 @@ var _       = require('underscore'),
 // include some processing libraries
 var tagReader     = require('./includes/tag_reader.js'),
     tagExtractor  = require('./includes/tag_extractor.js'),
+    tagGenerator  = require('./includes/tag_generator.js'),
     tagWriter     = require('./includes/tag_writer.js');
 
 // initialise the tag retrieval 
@@ -41,6 +42,8 @@ var write = function(params, callback) {
 
       }
 
+      params.original_size = tag_buffer.tags.length;
+
       return cb(null, tag_buffer);
 
     })
@@ -51,23 +54,25 @@ var write = function(params, callback) {
 
     var tags = new tagExtractor(tag_buffer);
 
-     // add in the new tags to our existing tags
-      for (var pt in params.tags) {
+    // add in the new tags to our existing tags
+    for (var pt in params.tags) {
 
-        tags.tags[pt] = params.tags[pt];
+      tags[pt] = params.tags[pt];
 
-      }
+    }
 
-      // swap the tags about
-      params.tags = tags.tags;
+    // swap the tags about
+    params.tags = tags;
 
-      return cb(null);
+    console.log(tags);
+
+    return cb(null);
 
   })
 
   actions.push(function(cb) {
 
-    new tagWriter(params, function(err, data) {
+    new tagGenerator(params, function(err, data) {
 
       if (!_.isNull(err)) {
 
@@ -91,6 +96,8 @@ var write = function(params, callback) {
 
       }
 
+      tags = new tagExtractor(tags);
+
       return cb(null, tags);
 
     })
@@ -105,7 +112,7 @@ var write = function(params, callback) {
 
     }
 
-    return callback(null);
+    return callback(null, data);
 
   })
 
