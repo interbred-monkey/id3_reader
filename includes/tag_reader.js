@@ -106,8 +106,6 @@ tagReader.prototype.loadHeader = function(callback) {
     version: '2.'+header.readUInt8(3)+'.'+header.readUInt8(4)
   }
 
-  console.log(_instance);
-
   return callback(null);
 
 }

@@ -3,33 +3,39 @@ var _           = require('underscore'),
     async       = require('async'),
     Buffer      = require('buffer').Buffer;
 
-var _instance = null;
+// include the tag config
+var config      = require('./config/config.json'),
+    _instance   = null;
 
 var tagWriter = function(params, callback) {
 
   _instance = this;
 
+  // keep the original stuff
+  _instance.path = params.path;
+  _instance.original_tag_size = params.original_size;
+  _instance.tags = params.tags;
+
+  _instance.tag_content = _instance.makeTags();
   _instance.tag_header = _instance.makeHeader();
 
-  return callback(_instance.tag_header);
+  var buffer = Buffer.concat([_instance.tag_header, _instance.tag_content]);
+
+  return callback(null, buffer);
 
 }
 
 tagWriter.prototype = {
+  path: null,
+  original_tag_size: null,
+  tags: null,
   tag_header: null,
-  tag_content: null
+  tag_content: null,
+  total_size: null
 }
 
-tagWriter.prototype.makeHeader = function() {
+tagWriter.prototype.loadMusic = function() {
 
-  var tag_header = new Buffer(10);
-
-  tag_header.write('ID3', 0, 3);
-  tag_header.writeUInt8('0x4', 3);
-  tag_header.writeUInt8('0x0', 4);
-  tag_header.write('0', 5);
-
-  return tag_header;
 
 }
 

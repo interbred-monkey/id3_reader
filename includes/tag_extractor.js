@@ -14,7 +14,8 @@ var tagExtractor = function(tag_data, callback) {
   _instance = this;
 
   var tags = _instance.processTags(tag_data.tags);
-  tag_data.tags = tags;
+  tags.version = tag_data.version;
+  tag_data = tags;
 
   return tag_data;
 
