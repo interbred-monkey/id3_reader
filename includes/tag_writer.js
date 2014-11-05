@@ -14,24 +14,77 @@ var tagWriter = function(params, callback) {
   // keep the original stuff
   _instance.path = params.path;
   _instance.original_tag_size = params.original_size;
-  _instance.tags = params.tags;
+  _instance.tags = params.tag_buffer;
+  (!_.isUndefined(params.save_path)?_instance.save_path = params.save_path:"");
 
-  _instance.tag_content = _instance.makeTags();
-  _instance.tag_header = _instance.makeHeader();
+  var actions = _instance.buildActions();
 
-  var buffer = Buffer.concat([_instance.tag_header, _instance.tag_content]);
-
-  return callback(null, buffer);
+  async.series(actions, )
+  return callback(null, null);
 
 }
 
 tagWriter.prototype = {
+  file_handle: null,
   path: null,
   original_tag_size: null,
   tags: null,
-  tag_header: null,
-  tag_content: null,
-  total_size: null
+  buffer: null,
+  save_path: null
+}
+
+tagWriter.prototype.buildActions = function(params) {
+
+  if (Buffer.isBuffer(_instance.path)) {
+
+    _instance.buffer = _instance.path;
+
+    var actions = [
+      _instance.replaceTags
+    ]
+
+    if (!_.isNull(_instance.save_path)) {
+
+      actions.push(_instance.writeFile);
+
+    }
+
+    return actions;
+
+  }
+
+  // read the buffer from a file
+  _instance.file_path = params;
+
+  var actions = [
+    _instance.openFile,
+    _instance.closeFile
+  ]
+
+  actions.unshift(function(cb) {
+
+    if (!_.isString(_instance.file_path)) {
+
+      return cb("File does not exist");
+
+    }
+
+    fs.exists(_instance.file_path, function(exists) {
+
+      if (!exists) {
+
+        return cb('File does not exist');
+
+      }
+
+      return cb(null);
+
+    })
+
+  })
+
+  return actions;
+
 }
 
 tagWriter.prototype.loadMusic = function() {

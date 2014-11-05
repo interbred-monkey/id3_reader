@@ -64,8 +64,6 @@ var write = function(params, callback) {
     // swap the tags about
     params.tags = tags;
 
-    console.log(tags);
-
     return cb(null);
 
   })
@@ -73,6 +71,24 @@ var write = function(params, callback) {
   actions.push(function(cb) {
 
     new tagGenerator(params, function(err, data) {
+
+      if (!_.isNull(err)) {
+
+        return cb(err);
+
+      }
+
+      params.tag_buffer = data;
+
+      return cb(null, data);
+
+    })
+
+  })
+
+  actions.push(function(cb) {
+
+    new tagWriter(params, function(err, data) {
 
       if (!_.isNull(err)) {
 
