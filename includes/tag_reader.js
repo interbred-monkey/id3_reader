@@ -30,7 +30,7 @@ var tagReader = function(params, callback) {
 
 tagReader.prototype = {
   buffer: null,
-  file_path: null,
+  path: null,
   file_handle: null,
   tag_size: null,
   tag_content: null
@@ -52,7 +52,7 @@ tagReader.prototype.buildActions = function(params) {
   }
 
   // read the buffer from a file
-  _instance.file_path = params;
+  _instance.path = params;
 
   var actions = [
     _instance.openFile,
@@ -65,13 +65,13 @@ tagReader.prototype.buildActions = function(params) {
 
   actions.unshift(function(cb) {
 
-    if (!_.isString(_instance.file_path)) {
+    if (!_.isString(_instance.path)) {
 
       return cb("File does not exist");
 
     }
 
-    fs.exists(_instance.file_path, function(exists) {
+    fs.exists(_instance.path, function(exists) {
 
       if (!exists) {
 
@@ -120,7 +120,7 @@ tagReader.prototype.loadTagBuffer = function(callback) {
 
 tagReader.prototype.openFile = function(callback) {
 
-  fs.open(_instance.file_path, 'r', function(err, file_handle) {
+  fs.open(_instance.path, 'r', function(err, file_handle) {
 
     if (err) {
 

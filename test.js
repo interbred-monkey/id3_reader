@@ -32,7 +32,7 @@ actions.push(function(cb) {
 
   id3.write({path: path, tags: tags}, function(err, data) {
 
-    console.log(data);
+    console.log(err, data);
 
     return cb(null);
 
@@ -57,6 +57,8 @@ actions.push(function(cb) {
 */
 
 async.series(actions, function() {
+
+  console.log("Done");
 
   process.exit();
 

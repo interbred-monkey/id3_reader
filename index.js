@@ -79,8 +79,8 @@ var write = function(params, callback) {
       }
 
       params.tag_buffer = data;
-
-      return cb(null, data);
+      
+      return cb(null);
 
     })
 
@@ -97,24 +97,6 @@ var write = function(params, callback) {
       }
 
       return cb(null, data);
-
-    })
-
-  })
-
-  actions.push(function(tag_buffer, cb) {
-
-    new tagReader(tag_buffer, function(err, tags) {
-
-      if (err) {
-
-        return cb(err);
-
-      }
-
-      tags = new tagExtractor(tags);
-
-      return cb(null, tags);
 
     })
 
