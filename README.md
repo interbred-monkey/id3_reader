@@ -10,6 +10,32 @@ ID3 Reader is available through an installation from npm
 npm install id3_reader
 ```
 
+#### Reading Tags
+```
+id3_reader.read(path_to_file, function(err, data) {
+  
+  console.log(err, data);
+
+})
+```
+The output from the above is as follows:
+```
+{ 
+  title: 'Nancy the Tavern Wench',
+  artist: 'Alestorm',
+  album: 'Captain Morgan\'s Revenge',
+  year: '2008',
+  track_number: '4/10',
+  genre: '137)Heavy Metal',
+  languages: 'eng',
+  rip_date: '2008-02-14',
+  ripping_tool: 'EAC',
+  release_type: 'Retail',
+  publisher: 'Napalm Records',
+  version: '2.3.0'
+} 
+```
+
 #### Writing Tags
 ```
 var params = {
@@ -22,7 +48,7 @@ var params = {
   }
 }
 
-id3_reader.write(params, function(success, data) {
+id3_reader.write(params, function(err, data) {
   
   console.log(err, data);
 
@@ -50,7 +76,7 @@ var params = {
   }
 }
 
-id3_reader.write(params, function(success, data) {
+id3_reader.write(params, function(err, data) {
   
   console.log(err, data);
 
