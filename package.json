@@ -1,6 +1,6 @@
 {
   "name": "id3_reader",
-  "version": "0.0.9",
+  "version": "1.0",
   "main": "index.js",
   "readmeFilename": "README.md",
   "description": "Reads and Writes ID3 tags for audio files using Javascript",
