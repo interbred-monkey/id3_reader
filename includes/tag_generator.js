@@ -3,7 +3,7 @@ var _           = require('underscore'),
     Buffer      = require('buffer').Buffer;
 
 // include the tag config
-var config      = require('./config/config.json'),
+var config      = require('../config/config.json'),
     _instance   = null;
 
 var tagGenerator = function(params, callback) {
