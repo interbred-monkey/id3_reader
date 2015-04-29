@@ -4,12 +4,18 @@ var _           = require('underscore'),
     Buffer      = require('buffer').Buffer;
 
 // include the tag config
-var config      = require('../config/config.json'),
-    _instance   = null;
+var config      = require('../config/config.json');
 
 var tagWriter = function(params, callback) {
 
-  _instance = this;
+  var _instance = this;
+
+  this.file_handle = null;
+  this.path = null;
+  this.original_tag_size = null;
+  this.tags = null;
+  this.buffer = null;
+  this.save_path = null;
 
   // keep the original stuff
   _instance.path = params.path;
@@ -17,141 +23,137 @@ var tagWriter = function(params, callback) {
   _instance.tags = params.tag_buffer;
   (!_.isUndefined(params.save_path)?_instance.save_path = params.save_path:"");
 
-  var actions = _instance.buildActions();
+  this.main = function(params, callback) {
+    var actions = _instance.buildActions();
 
-  async.series(actions, function(err, data) {
+    async.series(actions, function(err, data) {
 
-    if (!_.isNull(err)) {
+      if (!_.isNull(err)) {
 
-      return callback(err);
+        return callback(err);
+
+      }
+
+      if (Buffer.isBuffer(_instance.path) && _.isNull(_instance.save_path)) {
+
+        return callback(null, _instance.buffer);
+
+      }
+
+      return callback(null);
+
+    })
+  }
+
+  this.buildActions = function() {
+
+    if (Buffer.isBuffer(_instance.path)) {
+
+      _instance.buffer = _instance.path;
+
+      var actions = [
+        _instance.extractMusicBuffer,
+        _instance.replaceTags
+      ]
+
+      if (!_.isNull(_instance.save_path)) {
+
+        actions.push(_instance.writeFile);
+
+      }
+
+      return actions;
 
     }
-
-    if (Buffer.isBuffer(_instance.path) && _.isNull(_instance.save_path)) {
-
-      return callback(null, _instance.buffer);
-
-    }
-
-    return callback(null);
-
-  })
-
-}
-
-tagWriter.prototype = {
-  file_handle: null,
-  path: null,
-  original_tag_size: null,
-  tags: null,
-  buffer: null,
-  save_path: null
-}
-
-tagWriter.prototype.buildActions = function() {
-
-  if (Buffer.isBuffer(_instance.path)) {
-
-    _instance.buffer = _instance.path;
 
     var actions = [
+      _instance.readFile,
       _instance.extractMusicBuffer,
-      _instance.replaceTags
+      _instance.replaceTags,
+      _instance.writeFile
     ]
 
-    if (!_.isNull(_instance.save_path)) {
+    actions.unshift(function(cb) {
 
-      actions.push(_instance.writeFile);
+      if (!_.isString(_instance.path)) {
 
-    }
+        return cb("File does not exist");
+
+      }
+
+      fs.exists(_instance.path, function(exists) {
+
+        if (!exists) {
+
+          return cb('File does not exist');
+
+        }
+
+        return cb(null);
+
+      })
+
+    })
 
     return actions;
 
   }
 
-  var actions = [
-    _instance.readFile,
-    _instance.extractMusicBuffer,
-    _instance.replaceTags,
-    _instance.writeFile
-  ]
+  this.readFile = function(callback) {
 
-  actions.unshift(function(cb) {
+    fs.readFile(_instance.path, function(err, file_data) {
 
-    if (!_.isString(_instance.path)) {
+      if (err) {
 
-      return cb("File does not exist");
-
-    }
-
-    fs.exists(_instance.path, function(exists) {
-
-      if (!exists) {
-
-        return cb('File does not exist');
+        return callback("Unable to open file");
 
       }
 
-      return cb(null);
+      _instance.buffer = file_data.slice(_instance.original_tag_size);
+
+      return callback(null);
 
     })
 
-  })
+  }
 
-  return actions;
+  this.writeFile = function(callback) {
 
-}
+    var output_path = (!_.isNull(_instance.save_path)?_instance.save_path:_instance.path);
 
-tagWriter.prototype.readFile = function(callback) {
+    fs.writeFile(output_path, _instance.buffer, function(err, data) {
 
-  fs.readFile(_instance.path, function(err, file_data) {
+      if (err) {
 
-    if (err) {
+        return callback('unable to write file');
 
-      return callback("Unable to open file");
+      }
 
-    }
+      return callback(null);
 
-    _instance.buffer = file_data.slice(_instance.original_tag_size);
+    })
 
-    return callback(null);
+  }
 
-  })
+  this.replaceTags = function(callback) {
 
-}
+    _instance.buffer = Buffer.concat([_instance.tags, _instance.buffer]);
 
-tagWriter.prototype.writeFile = function(callback) {
+    return callback(null, _instance.buffer);
 
-  var output_path = (!_.isNull(_instance.save_path)?_instance.save_path:_instance.path);
+  }
 
-  fs.writeFile(output_path, _instance.buffer, function(err, data) {
+  this.extractMusicBuffer = function(callback) {
 
-    if (err) {
-
-      return callback('unable to write file');
-
-    }
+    _instance.buffer = _instance.buffer.slice(_instance.original_tag_size);
 
     return callback(null);
 
-  })
+  }
 
+  this.main(params, callback);
 }
 
-tagWriter.prototype.replaceTags = function(callback) {
 
-  _instance.buffer = Buffer.concat([_instance.tags, _instance.buffer]);
-
-  return callback(null, _instance.buffer);
-
-}
-
-tagWriter.prototype.extractMusicBuffer = function(callback) {
-
-  _instance.buffer = _instance.buffer.slice(_instance.original_tag_size);
-
-  return callback(null);
-
-}
 
 module.exports = tagWriter;
