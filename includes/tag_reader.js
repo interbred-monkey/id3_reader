@@ -5,14 +5,9 @@ var _           = require('underscore'),
     async       = require('async'),
     Buffer      = require('buffer').Buffer;
 
-// globals
-var _instance = null;
-
 var tagReader = function(params, callback) {
-
-  _instance = this;
-
-  var actions = _instance.buildActions(params);
+    var _this = this,
+        actions = this.buildActions(params);
 
   async.series(actions, function(err) {
 
@@ -21,9 +16,7 @@ var tagReader = function(params, callback) {
       return callback('Unable to process file');
 
     }
-
-    return callback(null, _instance.tag_content)
-
+        return callback(null, _this.tag_content);
   })
 
 }
@@ -37,14 +30,14 @@ tagReader.prototype = {
 }
 
 tagReader.prototype.buildActions = function(params) {
-
+    var _this = this;
   if (Buffer.isBuffer(params)) {
 
-    _instance.buffer = params;
+    this.buffer = params;
 
     var actions = [
-      _instance.loadHeader,
-      _instance.loadTagBuffer
+      this.loadHeader,
+      this.loadTagBuffer
     ]
 
     return actions;
@@ -52,26 +45,26 @@ tagReader.prototype.buildActions = function(params) {
   }
 
   // read the buffer from a file
-  _instance.path = params;
+  this.path = params;
 
   var actions = [
-    _instance.openFile,
-    _instance.readHeaderBuffer,
-    _instance.loadHeader,
-    _instance.readTagBuffer,
-    _instance.loadTagBuffer,
-    _instance.closeFile
+    this.openFile.bind(this),
+    this.readHeaderBuffer.bind(this),
+    this.loadHeader.bind(this),
+    this.readTagBuffer.bind(this),
+    this.loadTagBuffer.bind(this),
+    this.closeFile.bind(this)
   ]
 
   actions.unshift(function(cb) {
 
-    if (!_.isString(_instance.path)) {
+    if (!_.isString(_this.path)) {
 
       return cb("File does not exist");
 
     }
 
-    fs.exists(_instance.path, function(exists) {
+    fs.exists(_this.path, function(exists) {
 
       if (!exists) {
 
@@ -92,7 +85,7 @@ tagReader.prototype.buildActions = function(params) {
 // loads the details about the tag size etc
 tagReader.prototype.loadHeader = function(callback) {
 
-  var header = _instance.buffer.slice(0, 10);
+  var header = this.buffer.slice(0, 10);
 
   if (header.slice(0, 3).toString() !== 'ID3') {
 
@@ -100,9 +93,9 @@ tagReader.prototype.loadHeader = function(callback) {
 
   }
 
-  _instance.tag_size = _instance.id3Size(header.slice(6,10));
+  this.tag_size = this.id3Size(header.slice(6,10));
 
-  _instance.tag_content = {
+  this.tag_content = {
     version: '2.'+header.readUInt8(3)+'.'+header.readUInt8(4)
   }
 
@@ -111,16 +104,15 @@ tagReader.prototype.loadHeader = function(callback) {
 }
 
 tagReader.prototype.loadTagBuffer = function(callback) {
-
-  _instance.tag_content.tags = _instance.buffer.slice(0, _instance.tag_size);
+  this.tag_content.tags = this.buffer.slice(0, this.tag_size);
 
   return callback(null);
 
 }
 
 tagReader.prototype.openFile = function(callback) {
-
-  fs.open(_instance.path, 'r', function(err, file_handle) {
+    var _this = this;
+   fs.open(this.path, 'r', function (err, file_handle) {
 
     if (err) {
 
@@ -128,7 +120,7 @@ tagReader.prototype.openFile = function(callback) {
 
     }
 
-    _instance.file_handle = file_handle;
+    _this.file_handle = file_handle;
 
     return callback(null);
 
@@ -137,8 +129,7 @@ tagReader.prototype.openFile = function(callback) {
 }
 
 tagReader.prototype.closeFile = function(callback) {
-
-  fs.close(_instance.file_handle, function(err) {
+  fs.close(this.file_handle, function(err) {
 
     if (err) {
 
@@ -153,10 +144,10 @@ tagReader.prototype.closeFile = function(callback) {
 }
 
 tagReader.prototype.readHeaderBuffer = function(callback) {
+    var _this = this,
+        header_buffer = new Buffer(10);
 
-  var header_buffer = new Buffer(10);
-
-  fs.read(_instance.file_handle, header_buffer, 0, 10, 0, function(err, data) {
+  fs.read(this.file_handle, header_buffer, 0, 10, 0, function(err, data) {
 
     if (err) {
 
@@ -164,7 +155,7 @@ tagReader.prototype.readHeaderBuffer = function(callback) {
 
     }
 
-    _instance.buffer = header_buffer;
+    _this.buffer = header_buffer;
 
     return callback(null);
 
@@ -173,10 +164,10 @@ tagReader.prototype.readHeaderBuffer = function(callback) {
 }
 
 tagReader.prototype.readTagBuffer = function(callback) {
+    var _this = this,
+        tag_buffer = new Buffer(this.tag_size);
 
-  var tag_buffer = new Buffer(_instance.tag_size);
-
-  fs.read(_instance.file_handle, tag_buffer, 0, _instance.tag_size, 0, function(err, data) {
+  fs.read(this.file_handle, tag_buffer, 0, this.tag_size, 0, function(err, data) {
 
     if (err) {
 
@@ -184,7 +175,7 @@ tagReader.prototype.readTagBuffer = function(callback) {
 
     }
 
-    _instance.buffer = tag_buffer;
+    _this.buffer = tag_buffer;
 
     return callback(null);
 
