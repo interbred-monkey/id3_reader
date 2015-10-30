@@ -4,20 +4,17 @@ var _           = require('underscore'),
     Buffer      = require('buffer').Buffer;
 
 // include the tag config
-var config      = require('../config/config.json'),
-    _instance   = null;
+var config      = require('../config/config.json');
 
 var tagWriter = function(params, callback) {
 
-  _instance = this;
-
   // keep the original stuff
-  _instance.path = params.path;
-  _instance.original_tag_size = params.original_size;
-  _instance.tags = params.tag_buffer;
-  (!_.isUndefined(params.save_path)?_instance.save_path = params.save_path:"");
+  this.path = params.path;
+  this.original_tag_size = params.original_size;
+  this.tags = params.tag_buffer;
+  (!_.isUndefined(params.save_path)?this.save_path = params.save_path:"");
 
-  var actions = _instance.buildActions();
+  var actions = this.buildActions();
 
   async.series(actions, function(err, data) {
 
@@ -27,9 +24,9 @@ var tagWriter = function(params, callback) {
 
     }
 
-    if (Buffer.isBuffer(_instance.path) && _.isNull(_instance.save_path)) {
+    if (Buffer.isBuffer(this.path) && _.isNull(this.save_path)) {
 
-      return callback(null, _instance.buffer);
+      return callback(null, this.buffer);
 
     }
 
@@ -49,19 +46,20 @@ tagWriter.prototype = {
 }
 
 tagWriter.prototype.buildActions = function() {
+    var _this = this;
 
-  if (Buffer.isBuffer(_instance.path)) {
+  if (Buffer.isBuffer(this.path)) {
 
-    _instance.buffer = _instance.path;
+    this.buffer = this.path;
 
     var actions = [
-      _instance.extractMusicBuffer,
-      _instance.replaceTags
+      this.extractMusicBuffer.bind(this),
+      this.replaceTags.bind(this)
     ]
 
-    if (!_.isNull(_instance.save_path)) {
+    if (!_.isNull(this.save_path)) {
 
-      actions.push(_instance.writeFile);
+      actions.push(this.writeFile);
 
     }
 
@@ -70,21 +68,21 @@ tagWriter.prototype.buildActions = function() {
   }
 
   var actions = [
-    _instance.readFile,
-    _instance.extractMusicBuffer,
-    _instance.replaceTags,
-    _instance.writeFile
+    this.readFile.bind(this),
+    this.extractMusicBuffer.bind(this),
+    this.replaceTags.bind(this),
+    this.writeFile.bind(this)
   ]
 
   actions.unshift(function(cb) {
 
-    if (!_.isString(_instance.path)) {
+    if (!_.isString(_this.path)) {
 
       return cb("File does not exist");
 
     }
 
-    fs.exists(_instance.path, function(exists) {
+    fs.exists(_this.path, function(exists) {
 
       if (!exists) {
 
@@ -103,8 +101,9 @@ tagWriter.prototype.buildActions = function() {
 }
 
 tagWriter.prototype.readFile = function(callback) {
+    var _this = this;
 
-  fs.readFile(_instance.path, function(err, file_data) {
+  fs.readFile(this.path, function(err, file_data) {
 
     if (err) {
 
@@ -112,7 +111,7 @@ tagWriter.prototype.readFile = function(callback) {
 
     }
 
-    _instance.buffer = file_data.slice(_instance.original_tag_size);
+    _this.buffer = file_data.slice(_this.original_tag_size);
 
     return callback(null);
 
@@ -122,9 +121,9 @@ tagWriter.prototype.readFile = function(callback) {
 
 tagWriter.prototype.writeFile = function(callback) {
 
-  var output_path = (!_.isNull(_instance.save_path)?_instance.save_path:_instance.path);
+    var output_path = (!_.isNull(this.save_path)?this.save_path:this.path);
 
-  fs.writeFile(output_path, _instance.buffer, function(err, data) {
+    fs.writeFile(output_path, this.buffer, function (err, data) {
 
     if (err) {
 
@@ -139,16 +138,15 @@ tagWriter.prototype.writeFile = function(callback) {
 }
 
 tagWriter.prototype.replaceTags = function(callback) {
+    this.buffer = Buffer.concat([this.tags, this.buffer]);
 
-  _instance.buffer = Buffer.concat([_instance.tags, _instance.buffer]);
-
-  return callback(null, _instance.buffer);
+    return callback(null, this.buffer);
 
 }
 
 tagWriter.prototype.extractMusicBuffer = function(callback) {
 
-  _instance.buffer = _instance.buffer.slice(_instance.original_tag_size);
+  this.buffer = this.buffer.slice(this.original_tag_size);
 
   return callback(null);
 

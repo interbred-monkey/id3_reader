@@ -6,14 +6,11 @@ var _       = require('underscore'),
     Buffer  = require('buffer').Buffer;
 
 // include the tag config
-var config      = require('../config/config.json'),
-    _instance   = null;
+var config      = require('../config/config.json');
 
 var tagExtractor = function(tag_data, callback) {
 
-  _instance = this;
-
-  var tags = _instance.processTags(tag_data.tags);
+  var tags = this.processTags(tag_data.tags);
   tags.version = tag_data.version;
   tag_data = tags;
 
@@ -67,7 +64,7 @@ tagExtractor.prototype.processTags = function(content) {
       // is this some user defined tag?
       if (label === "user_defined_text_information_frame") {
 
-        tag_data = _instance.getUserData(text);
+                tag_data = this.getUserData(text);
         label = tag_data.label;
         text = tag_data.text;
 
