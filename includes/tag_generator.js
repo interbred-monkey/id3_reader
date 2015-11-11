@@ -3,20 +3,17 @@ var _           = require('underscore'),
     Buffer      = require('buffer').Buffer;
 
 // include the tag config
-var config      = require('../config/config.json'),
-    _instance   = null;
+var config      = require('../config/config.json');
 
 var tagGenerator = function(params, callback) {
 
-  _instance = this;
-
   // keep the original stuff
-  _instance.tags = params.tags;
+  this.tags = params.tags;
 
-  _instance.tag_content = _instance.makeTags();
-  _instance.tag_header = _instance.makeHeader();
+  this.tag_content = this.makeTags();
+  this.tag_header = this.makeHeader();
 
-  var buffer = Buffer.concat([_instance.tag_header, _instance.tag_content]);
+  var buffer = Buffer.concat([this.tag_header, this.tag_content]);
 
   return callback(null, buffer);
 
@@ -36,7 +33,7 @@ tagGenerator.prototype.makeHeader = function() {
   tag_header.write('ID3', 0, 3);
   tag_header.writeUInt8('0x4', 3);
   tag_header.writeUInt8('0x0', 4);
-  tag_header.writeUInt32BE(_instance.total_size, 6);
+  tag_header.writeUInt32BE(this.total_size, 6);
 
   return tag_header;
 
@@ -47,9 +44,9 @@ tagGenerator.prototype.makeTags = function() {
   var tags   = {},
       labels = _.invert(config.labels);
 
-  delete(_instance.tags.version);
+  delete(this.tags.version);
 
-  for (var it in _instance.tags) {
+  for (var it in this.tags) {
 
     var label = it.toLowerCase().replace(/_/g, ' ');
 
@@ -57,9 +54,9 @@ tagGenerator.prototype.makeTags = function() {
 
       tags[labels[label]] = 
         (labels[label] === 'APIC'?'\u0000\u0069\u006D\u0061\u0067\u0065\u002F\u0070\u006E\u0067\u0000\u0003\u0000':'\u0000') 
-        + _instance.tags[it];
+        + this.tags[it];
       
-      _instance.total_size += (labels[label] === 'APIC'?13 + 10:11) + tags[labels[label]].length;
+      this.total_size += (labels[label] === 'APIC'?13 + 10:11) + tags[labels[label]].length;
 
     }
 
@@ -72,17 +69,17 @@ tagGenerator.prototype.makeTags = function() {
 
       }
 
-      tags['TXXX'].push(label + _instance.tags[it]);
-      _instance.total_size += 10 + tags['TXXX'][tags['TXXX'].length - 1].length;
+      tags['TXXX'].push(label + this.tags[it]);
+      this.total_size += 10 + tags['TXXX'][tags['TXXX'].length - 1].length;
 
     }
 
   }
 
   // calculate the total size of the tags
-  _instance.total_size = _instance.calculateTotalTagSize();
+  this.total_size = this.calculateTotalTagSize();
 
-  var tag_buffer = new Buffer(_instance.total_size + 10),
+  var tag_buffer = new Buffer(this.total_size + 10),
       pos        = 0;
 
   tag_buffer.fill('');
@@ -126,7 +123,7 @@ tagGenerator.prototype.makeTags = function() {
 tagGenerator.prototype.calculateTotalTagSize = function() {
 
   //calculate new tag size, convert to special 28-bit int
-  var bit_size = _instance.total_size.toString(2);
+  var bit_size = this.total_size.toString(2);
   var formatted_size = new Array(32);
   var appended_size = new Array(32);
 
