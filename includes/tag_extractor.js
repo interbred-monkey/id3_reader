@@ -59,12 +59,40 @@ tagExtractor.prototype.processTags = function(content) {
     if (_.isUndefined(config.labels[tag_label]) === false) {
 
       var label = config.labels[tag_label].toLowerCase().replace(/\s/g, '_');
-      var text = content.slice(pos + 10, pos + 10 + tag_size).toString('UTF-8').replace(/[\u0000-\u0009]|~|�/g, '');
+      var encoding = content.slice(pos + 10, pos + 11)[0];
+      var textBuf = content.slice(pos + 10 + 1, pos + 10 + tag_size);
+      var text = '';
+
+      if (tag_label == 'COMM' || tag_label == 'USER' || tag_label == 'USLT' || tag_label == 'SYLT') {
+
+        textBuf = textBuf.slice(3); // these tags *always* have a 3 byte prefix with a language id, trim it
+
+      }
+
+      if (encoding == 0) { // LATIN1
+
+        text = textBuf.toString('binary').replace(/[\x00-\x09]/g, '');
+
+      } else if (encoding == 1) { // UCS-2 with BOM
+
+        var textClean = textBuf.toString('binary').replace(/\x00\x00|\xFF\xFE/g, '');
+        text = new Buffer(textClean, 'binary').toString('ucs2');
+
+      }  else if (encoding == 2) { // UTF-16-BE without BOM
+
+        // unsupported
+
+      } else if (encoding == 3) { // UTF-8
+
+        var textClean = textBuf.toString('binary').replace(/[\x00-\x09]|\xEF\xBB\xBF/g, '');
+        text = new Buffer(textClean, 'binary').toString('utf8');
+        
+      }
 
       // is this some user defined tag?
       if (label === "user_defined_text_information_frame") {
 
-                tag_data = this.getUserData(text);
+        tag_data = this.getUserData(text);
         label = tag_data.label;
         text = tag_data.text;
 
